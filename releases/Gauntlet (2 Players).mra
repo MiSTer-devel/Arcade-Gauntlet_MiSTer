@@ -1,7 +1,7 @@
 <misterromdescription>
-	<name>Gauntlet (rev 14)</name>
+	<name>Gauntlet (2 Players, rev 3)</name>
 	<mameversion>0225</mameversion>
-	<setname>gauntlet</setname>
+	<setname>gauntlet2pr3</setname>
 	<mratimestamp>20201112131415</mratimestamp>
 	<year>1985</year>
 	<manufacturer>Atari Games</manufacturer>
@@ -12,9 +12,9 @@
 	<display type="raster" rotate="0"/>
 	<buttons names="Magic/Start,Fire,-,-,Coin,-" default="B,A,R"/>
 	<rom index="1">
-		<part>68</part>
+		<part>6B</part>
 	</rom>
-	<rom index="0" zip="gauntlet.zip" md5="2c47e79aa95c71207349e8803ae69523">
+	<rom index="0" zip="gauntlet.zip|gauntlet2pr3.zip" md5="91af2918ac3b71b038fe5a1927026407">
 		<interleave output="32">
 			<part crc="29a5db41" name="136037-117.2l" map="0001"/>
 			<part crc="9510b898" name="136037-115.2a" map="0010"/>
@@ -29,8 +29,8 @@
 		</interleave>
 		<part repeat="0x80000">00</part>
 		<interleave output="16">
-			<part crc="46fe8743" name="136037-1307.9a" map="01"/>
-			<part crc="276e15c4" name="136037-1308.9b" map="10"/>
+			<part crc="0e1af1b4" name="136041-207.9a" map="01"/>
+			<part crc="bf51a238" name="136041-208.9b" map="10"/>
 		</interleave>
 		<part repeat="0x20000">00</part>
 		<interleave output="16">
@@ -39,8 +39,8 @@
 		</interleave>
 		<part repeat="0x8000">00</part>
 		<interleave output="16">
-			<part crc="6fb8419c" name="136037-1409.7a" map="01"/>
-			<part crc="931bd2a0" name="136037-1410.7b" map="10"/>
+			<part crc="5acbcd2b" name="136041-309.7a" map="01"/>
+			<part crc="1889ab77" name="136041-310.7b" map="10"/>
 		</interleave>
 		<part repeat="0x30000">00</part>
 		<part crc="fa19861f" name="136037-119.16s"/>

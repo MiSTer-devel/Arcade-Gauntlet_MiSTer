@@ -14,7 +14,7 @@
 	<rom index="1">
 		<part>76</part>
 	</rom>
-	<rom index="0" zip="vindctr2.zip" md5="none">
+	<rom index="0" zip="vindctr2.zip" md5="5bfe5a9d28a3a83164199654eb1ef246">
 		<interleave output="32">
 			<part crc="9484ba65" name="136059-1165.2l" map="0001"/>
 			<part crc="50e76162" name="136059-1164.2a" map="0010"/>

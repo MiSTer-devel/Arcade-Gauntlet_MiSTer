@@ -14,7 +14,7 @@
 	<rom index="1">
 		<part>6A</part>
 	</rom>
-	<rom index="0" zip="gaunt2.zip" md5="none">
+	<rom index="0" zip="gaunt2.zip" md5="0847ac69b06dd977b64cda3677367fe1">
 		<interleave output="32">
 			<part crc="9e30b2e9" name="136043-1117.2l" map="0001"/>
 			<part crc="f71e2503" name="136043-1115.2a" map="0010"/>
