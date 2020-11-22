@@ -318,7 +318,7 @@ wire [7:0] I_P2 = (slap_type == 118) ?
 				  ~(p2 | {JoyZ_Bk,JoyX_Bk,JoyZ_Fw,JoyX_Fw,joy1[7], joy1[6], joy1[5], joy1[4]} )
 				: ~(p2 | {joy1[3], joy1[2], joy1[1], joy1[0], joy1[7], joy1[6], joy1[5], joy1[4]});
 wire [7:0] I_P3 = (slap_type == 118) ?
-				  ~(p3 | { 6'b0,,joy2[9],joy1[9] })
+				  ~(p3 | { 6'b0,,joy1[9],joy0[9] })
 				: ~(p3 | {joy2[3], joy2[2], joy2[1], joy2[0], joy2[7], joy2[6], joy2[5], joy2[4]});
 wire [7:0] I_P4 = (slap_type == 118) ?
 					~(p4 | { 8'b0 })
@@ -364,7 +364,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({1'b0,direct_video}),
+	.status_menumask({(slap_type == 118),direct_video}),
 	.direct_video(direct_video),
 
 	.ioctl_addr(ioctl_addr),
