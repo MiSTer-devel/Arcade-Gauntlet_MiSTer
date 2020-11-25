@@ -1,7 +1,7 @@
 # Atari Gauntlet FPGA Arcade
 
 ## About
-This is an FPGA implementation of Atari's arcade game "Gauntlet" from 1985, based on the SP-284 schematic circuit diagram.  
+This is an FPGA implementation of Atari's arcade game "Gauntlet" by Alex https://github.com/d18c7db from 1985, based on the SP-284 schematic circuit diagram.  
 
 On a [Pipistrello](http://pipistrello.saanlima.com/index.php?title=Welcome_to_Pipistrello) FPGA board with a [SRAM expansion](https://oshpark.com/profiles/d18c7db) daughterboard it successfully runs all three games Gauntlet, Gauntlet II and Vindicators II that run on the original arcade. All sounds are implemeted, Pokey, YM2151 and TMS5220 Voice Synthesis Processor (see my [TMS5220 repository](https://github.com/d18c7db/TMS5220_FPGA) for more details on the VSP).  
 
@@ -38,15 +38,10 @@ Quickreference for folders and file placement:
 
 Gauntlet currently supports up to 4 joysticks for 4 players. (up, down, left, right, fire, start/magic, coin) MAME keys layout is available for player 1 (up, down left, right, ctrl, alt, 5) and player 2 (R, F, D, G, A, S, 6) for player 3 and 4, only coins keys (7, 8) are mapped.  
 
-Due to the tank controls used in Vindicators one would need perhaps two joysticks per player. For Vindicators keyboard is supported, 5,6 are coin, 1,2 start game, QWERASDF and YUIOHJKL controls for player 1 and 2 respectively. Joysticks are connected but may need remapping.  
+The tank controls used in Vindicators are mapped to one joystick. For Vindicators keyboard is supported, 5,6 are coin, 1,2 start game, QWERASDF and YUIOHJKL controls for player 1 and 2 respectively. Joysticks are connected but may need remapping.  
 
 ## Building
 
 ### Pipistrello
-The project files are under `rtl/boards/pipistrello` and are setup for Xilinx ISE 14.7  
-NOTE: Pipistrello needs an additional custom SRAM board for this project since the FPGA doesn't have enough internal memory. See https://oshpark.com/profiles/d18c7db  
+see original project: https://github.com/d18c7db/Gauntlet_FPGA
 
-### MiSTer
-
-The project files are under `rtl/boards/miSTer` and are setup for Quartus 17  
-*WARNING:* some MiSTer files in `sys` have been customized slightly (ramstyle attributes) to allow the project to fully synthesize without errors due to the fitter being unable to fully place all memories.
