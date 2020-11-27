@@ -14,7 +14,7 @@
 	<rom index="1">
 		<part>6B</part>
 	</rom>
-	<rom index="0" zip="gauntlet.zip|gauntlet2pr3.zip" md5="91af2918ac3b71b038fe5a1927026407">
+	<rom index="0" zip="gauntlet.zip|gauntlet2pr3.zip" md5="none">
 		<interleave output="32">
 			<part crc="29a5db41" name="136037-117.2l" map="0001"/>
 			<part crc="9510b898" name="136037-115.2a" map="0010"/>
