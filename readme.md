@@ -2,6 +2,7 @@
 
 ## About
 This is an FPGA implementation of Atari's arcade game "Gauntlet" by Alex https://github.com/d18c7db from 1985, based on the SP-284 schematic circuit diagram.  
+
 It successfully runs all three games Gauntlet, Gauntlet II and Vindicators II that run on the original arcade. All sounds are implemeted, Pokey, YM2151 and TMS5220 Voice Synthesis Processor (see my [TMS5220 repository](https://github.com/d18c7db/TMS5220_FPGA) for more details on the VSP).  
 
 [![Gauntlet Tile](doc/images/MAME_G1.png)](doc/images/MAME_G1.png)
