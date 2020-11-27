@@ -24,7 +24,9 @@ The implementation is functional right now, can coin up and start game, known pr
 ## MiSTer Install
 This repository follows the standard folder structure for distributing MiSTer files.
 
-ROMs are not included so in order to use this arcade, you need to provide the correct game ROM.
+ROMs are not included so in order to use this arcade, you need to provide the correct game ROM.  
+
+*WARNING:* In order to play Vindicators part 2, you must run the python script "descramble_2J.py 136059-1184.2j 136059-1184.des.2j" then copy the binary output file 136059-1184.des.2j into the zip file with the original ROMs.  
 
 To simplify the process .mra files are provided in the releases folder, that specify the required ROMs with checksums. The .zip filename refers to the corresponding ROM file of the MAME project.
 
