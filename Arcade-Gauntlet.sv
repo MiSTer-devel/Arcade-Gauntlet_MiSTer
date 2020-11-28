@@ -280,7 +280,6 @@ always @(posedge clk_sys) begin
 	end
 end
 
-
 /// from ultratank
 
 reg JoyW_Fw,JoyW_Bk,JoyX_Fw,JoyX_Bk;
@@ -298,34 +297,30 @@ always @(posedge clk_sys) begin
 		default: begin JoyW_Fw=0; JoyW_Bk=0; JoyX_Fw=0; JoyX_Bk=0; end
 	endcase
 	case ({joy1[3],joy1[2],joy1[1],joy1[0]}) // Up,down,Left,Right
-		4'b1010: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Arriba_Izda
-		4'b1000: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Arriba
-		4'b1001: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=0; end //Arriba_Derecha
-		4'b0001: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=1; end //Derecha
-		4'b0101: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=0; JoyZ_Bk=0; end //Abajo_Derecha		
-		4'b0100: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=0; JoyZ_Bk=1; end //Abajo
-		4'b0110: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=1; end //Abajo_Izquierda
-		4'b0010: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=1; JoyZ_Bk=0; end //Izquierda
+		4'b1010: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Up_Left
+		4'b1000: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Up
+		4'b1001: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=0; end //Up_Right
+		4'b0001: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=1; end //Right
+		4'b0101: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=0; JoyZ_Bk=0; end //Down_Right
+		4'b0100: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=0; JoyZ_Bk=1; end //Down
+		4'b0110: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=1; end //Down_Left
+		4'b0010: begin JoyY_Fw=0; JoyY_Bk=1; JoyZ_Fw=1; JoyZ_Bk=0; end //Left
 		default: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=0; end
 	endcase
 end
-			
 
 wire [7:0] I_P1 = (slap_type == 118) ?
-				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joy0[7], joy0[6], joy0[5], joy0[4]} )
-				: ~(p1 | {joy0[3], joy0[2], joy0[1], joy0[0], joy0[7], joy0[6], joy0[5], joy0[4]});
+				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joy0[7:4]})
+				: ~(p1 | {joy0[3:0], joy0[7:4]});
 wire [7:0] I_P2 = (slap_type == 118) ? 
-				  ~(p2 | {JoyZ_Bk,JoyX_Bk,JoyZ_Fw,JoyX_Fw,joy1[7], joy1[6], joy1[5], joy1[4]} )
-				: ~(p2 | {joy1[3], joy1[2], joy1[1], joy1[0], joy1[7], joy1[6], joy1[5], joy1[4]});
+				  ~(p2 | {JoyZ_Bk,JoyX_Bk,JoyZ_Fw,JoyX_Fw,joy1[7:4]})
+				: ~(p2 | {joy1[3:0], joy1[7:4]});
 wire [7:0] I_P3 = (slap_type == 118) ?
-				  ~(p3 | { 6'b0,,joy1[9],joy0[9] })
-				: ~(p3 | {joy2[3], joy2[2], joy2[1], joy2[0], joy2[7], joy2[6], joy2[5], joy2[4]});
+				  ~(p3 | { 6'b0,joy1[9],joy0[9]})
+				: ~(p3 | {joy2[3:0], joy2[7:4]});
 wire [7:0] I_P4 = (slap_type == 118) ?
-					~(p4 | { 8'b0 })
-				: ~(p4 | {joy3[3], joy3[2], joy3[1], joy3[0], joy3[7], joy3[6], joy3[5], joy3[4]});
-
-
-
+				  ~(p4)
+				: ~(p4 | {joy3[3:0], joy3[7:4]});
 
 ///////////////////////////////////////////////////
 always @(posedge clk_vid) begin
@@ -404,6 +399,9 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	wire [13:0] cp_addr;
 	wire [ 7:0] cp_data;
 
+	wire [ 7:0] r4_addr;
+	wire [ 3:0] r4_data, r4_data_G1, r4_data_G2, r4_data_V2;
+
 	always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==1)) slap_type <= ioctl_dout;
 
 	// ioctl_addr 000000..01FFFF = video ROMs 2L  2A  1L  1A  (4*32KB)
@@ -468,7 +466,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 		sdram_we <= 1'b0;
 		if (ioctl_wr && (!ioctl_index) && ioctl_download && ioctl_addr[1] && ioctl_addr[0])
 		begin
-			sdram_data = {acc_bytes,ioctl_dout};
+			sdram_data <= {acc_bytes,ioctl_dout};
 			sdram_we <= 1'b1;
 		end
 	end
@@ -555,6 +553,12 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 
 	// total game dpram uses 416 of 553 M10K blocks
 
+	PROM_4R_G1 PROM_4R_G1(.CLK(clk_14M), .ADDR(r4_addr), .DATA(r4_data_G1) );
+	PROM_4R_G2 PROM_4R_G2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_G2) );
+	PROM_4R_V2 PROM_4R_V2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_V2) );
+
+	assign r4_data = (slap_type == 118)?r4_data_V2:(slap_type == 106)?r4_data_G2:r4_data_G1;
+
 FPGA_GAUNTLET gauntlet
 (
 	.I_CLK_14M(clk_14M),
@@ -562,11 +566,6 @@ FPGA_GAUNTLET gauntlet
 
 	.I_RESET(RESET | status[0] | buttons[1] | ioctl_download),
 
-	//            up       down     left     right    start    button3  button2  button1
-	//.I_P1(~(p1 | {joy0[3], joy0[2], joy0[1], joy0[0], joy0[7], joy0[6], joy0[5], joy0[4]})),
-	//.I_P2(~(p2 | {joy1[3], joy1[2], joy1[1], joy1[0], joy1[7], joy1[6], joy1[5], joy1[4]})),
-	//.I_P3(~(p3 | {joy2[3], joy2[2], joy2[1], joy2[0], joy2[7], joy2[6], joy2[5], joy2[4]})),
-	//.I_P4(~(p4 | {joy3[3], joy3[2], joy3[1], joy3[0], joy3[7], joy3[6], joy3[5], joy3[4]})),
 	.I_P1(I_P1),
 	.I_P2(I_P2),
 	.I_P3(I_P3),
@@ -600,6 +599,9 @@ FPGA_GAUNTLET gauntlet
 	.O_MP_EN(mp_en),
 	.O_MP_ADDR(mp_addr),
 	.I_MP_DATA(mp_data),
+
+	.O_4R_ADDR(r4_addr),
+	.I_4R_DATA(r4_data),
 
 	.O_AP_EN(ap_en),
 	.O_AP_ADDR(ap_addr),
