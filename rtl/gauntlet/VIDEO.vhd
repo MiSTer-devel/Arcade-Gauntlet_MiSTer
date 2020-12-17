@@ -122,7 +122,7 @@ architecture RTL of VIDEO is
 		sl_HORZDLn_tap,
 		sl_HSYNCn,
 		sl_LDABn,
-		sl_LINKn,
+		sl_LINKn_tap,
 		sl_LMPDn,
 		sl_MATCHDL,
 		sl_MC0,
@@ -130,6 +130,8 @@ architecture RTL of VIDEO is
 		sl_MFLP,
 		sl_MO_PFn,
 		sl_NEWMOn,
+		sl_NEWMOn_G,
+		sl_NEWMOn_V,
 		sl_NXLn,
 		sl_NXLn_star,
 		sl_PFHSTn,
@@ -291,7 +293,7 @@ begin
 	p_8F_8J : process
 	begin
 		wait until rising_edge(I_MCKR);
-		if sl_LINKn = '0' then
+		if sl_LINKn_tap = '0' then
 			slv_LINK <= slv_VRD(9 downto 0);
 		end if;
 	end process;
@@ -649,24 +651,23 @@ begin
 	-- gate 7T
 	sl_H03	<= sl_2H and sl_1H;
 
+	-- Vindicators has tweaked equations in PROM 7U for signal /NEWMON
+	-- Select between Vindicators or Gauntlet equations
+	sl_NEWMOn <= sl_NEWMOn_V when I_SLAP_TYPE = 118 else sl_NEWMOn_G;
+
 	-- 6U latch with 7U PROM equations
 	p_6U : process
 	begin
 		wait until rising_edge(I_MCKR);
 			-- 82S147 512x8 TTL BIPOLAR PROM (Atari chip 136037.101)
 			-- These equations replace the 7U PROM
-			-- Minterms Sum of Products
-			-- D7  =  A5 A1'  +  A5 A0  +  A5 A2  +  A6 A4 A3 A2' A1 A0'  +  A6 A5
-			-- D6  =  A0'  +  A1  +  A2  +  A5
-			-- D5  =  A1' A0  +  A1 A0'  +  A5 A3 A2' A0  +  A7 A4' A3 A2 A0  +  A7 A5 A3 A0
-			-- D4  =  A3'  +  A1' A0  +  A1 A0'  +  A2 A0  +  A5' A4 A2' A1'  +  A5 A0
-			-- D3  =  A1' A0  +  A1 A0'  +  A3 A2  +  A5 A3  +  A3' A0  +  A4' A3 A1'
-			-- D2  =  A2'  +  A0'  +  A1  +  A8
-			-- D1  =  A1' A0  +  A2' A1 A0'  +  A7' A2 A0  +  A4' A3 A2 A0  +  A5 A3 A0
-			-- D0  =  A1'  +  A2' A0  +  A7 A0
-		sl_NEWMOn <=	(sl_NEWMOn and (sl_4H or (not sl_2H) or sl_1H)) or
+		sl_NEWMOn_V <=	(sl_NEWMOn_V and (sl_4H or (not sl_2H) or sl_1H)) or
 							(sl_ENDn and sl_MATCHDL and sl_MATCH and (not sl_4H) and sl_2H and (not sl_1H)) or
-							(sl_ENDn and sl_NEWMOn);
+							(sl_ENDn and sl_NEWMOn_V);
+
+		sl_NEWMOn_G <=	(sl_NEWMOn_G and ( (not sl_2H) or ((not sl_4H) and sl_1H) or (sl_4H and (not sl_1H)) or (sl_NXLn and sl_1H))) or
+							(sl_ENDn and sl_MATCHDL and sl_MATCH and (not sl_4H) and sl_2H and (not sl_1H)) or
+							(sl_ENDn and sl_NEWMOn_G and (not sl_4H));
 
 		sl_LDABn <=		sl_NEWMOn or sl_4H or sl_2H or (not sl_1H);
 
@@ -701,7 +702,7 @@ begin
 	-- 8T selector
 	--	here we use the tap signals as master clock gates so that we can capture the
 	--	data we want at the same time as falling edge of the corresponding non tap signals
-	sl_LINKn			<= sl_G8T or (not sl_MC1) or (not sl_MC0); -- 3
+	sl_LINKn_tap	<= sl_G8T or (not sl_MC1) or (not sl_MC0); -- 3
 	sl_VERTDLn_tap	<= sl_G8T or (not sl_MC1) or (    sl_MC0); -- 2
 	sl_HORZDLn_tap	<= sl_G8T or (    sl_MC1) or (not sl_MC0); -- 1
 	sl_PICTDLn_tap	<= sl_G8T or (    sl_MC1) or (    sl_MC0); -- 0
