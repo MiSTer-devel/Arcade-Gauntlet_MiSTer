@@ -937,8 +937,8 @@ ARCHITECTURE rtl OF ascal IS
 
   SIGNAL o_h_poly : arr_uv36(0 TO 2**FRAC-1):=init_poly;
   SIGNAL o_v_poly : arr_uv36(0 TO 2**FRAC-1):=init_poly;
-  ATTRIBUTE ramstyle OF o_h_poly : SIGNAL IS "no_rw_check";
-  ATTRIBUTE ramstyle OF o_v_poly : SIGNAL IS "no_rw_check";
+  ATTRIBUTE ramstyle OF o_h_poly : SIGNAL IS "no_rw_check,logic";
+  ATTRIBUTE ramstyle OF o_v_poly : SIGNAL IS "no_rw_check,logic";
   SIGNAL o_h_poly_a,o_v_poly_a : integer RANGE 0 TO 2**FRAC-1;
   SIGNAL o_h_poly_dr,o_h_poly_dr2,o_v_poly_dr,o_v_poly_dr2 : unsigned(35 DOWNTO 0);
   SIGNAL o_h_poly_pix,o_v_poly_pix : type_pix;
