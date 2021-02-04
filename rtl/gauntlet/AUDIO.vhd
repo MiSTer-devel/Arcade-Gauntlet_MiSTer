@@ -399,7 +399,7 @@ begin
 	sl_2H <= I_1H and I_2H;
 
 	-- YM2151 sound
-	u_15R : JT51
+	u_15R : jt51
 	port map(
 		-- inputs
 		rst		=> sl_YAMRES,	-- active high reset
