@@ -109,8 +109,8 @@ architecture RTL of VGA_SCANCONV is
 	signal DPRAM : RAM_ARRAY_1Kx16:=(others=>(others=>'0'));
 
 	-- Ask synthesis tools to use block RAMs if possible
-	attribute ram_style : string;
-	attribute ram_style of DPRAM : signal is "block";
+	attribute ramstyle : string;
+	attribute ramstyle of DPRAM : signal is "M10K";
 
 begin
 	ivideo <= I_VIDEO;

@@ -35,8 +35,8 @@ end LINEBUF;
 architecture RTL of LINEBUF is
 	type RAM_ARRAY is array (0 to 511) of std_logic_vector(7 downto 0);
 	signal RAM : RAM_ARRAY := ((others=>(others=>'1')));
-	attribute ram_style : string;
-	attribute ram_style of RAM : signal is "block";
+	attribute ramstyle : string;
+	attribute ramstyle of RAM : signal is "logic";
 
 	signal
 		sl_CLRn,

@@ -91,8 +91,8 @@ begin
 	-- IMPORTANT: data out is the COMPLEMENT of data in!!!
 	p_4M_5M : process
 	variable RAM : RAM_ARRAY;
-	attribute ram_style : string;
-	attribute ram_style of RAM : variable is "distributed";
+	attribute ramstyle : string;
+	attribute ramstyle of RAM : variable is "M10K";
 	begin
 		wait until falling_edge(I_CK);
 		slv_4D <= RAM(to_integer(unsigned(RAM_4M_5M_addr))); -- 4D latch
