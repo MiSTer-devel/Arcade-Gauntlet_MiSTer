@@ -30,8 +30,8 @@ architecture RTL of PROM_5E is
 		x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E", -- 0x00E0
 		x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"E",x"3"  -- 0x00F0
 	);
-	attribute ram_style : string;
-	attribute ram_style of ROM : signal is "distributed";
+	attribute ramstyle : string;
+	attribute ramstyle of ROM : signal is "logic";
 begin
 	mem_proc : process
 	begin

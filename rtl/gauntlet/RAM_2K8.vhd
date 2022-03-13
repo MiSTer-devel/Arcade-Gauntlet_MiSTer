@@ -32,8 +32,8 @@ architecture RTL of RAM_2K8 is
 	signal RAM : RAM_ARRAY_2Kx8 := (others=>(others=>'0'));
 
 	-- Ask synthesis tools to use block RAM if possible
-	attribute ram_style : string;
-	attribute ram_style of RAM : signal is "block";
+	attribute ramstyle : string;
+	attribute ramstyle of RAM : signal is "M10K";
 
 begin
 	p_RAM : process
