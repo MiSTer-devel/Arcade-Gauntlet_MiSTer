@@ -92,7 +92,7 @@ begin
 	p_4M_5M : process
 	variable RAM : RAM_ARRAY;
 	attribute ramstyle : string;
-	attribute ramstyle of RAM : variable is "M10K";
+	attribute ramstyle of RAM : variable is "logic";
 	begin
 		wait until falling_edge(I_CK);
 		slv_4D <= RAM(to_integer(unsigned(RAM_4M_5M_addr))); -- 4D latch
