@@ -31,7 +31,7 @@
 
 	<rom index="1">
 		<part>76</part>
-		</rom>
+	</rom>
 	<rom index="0" zip="vindctr2.zip" md5="none">
 		<interleave output="32">
 			<part crc="9484ba65" name="136059-1165.2l" map="0001"/>
