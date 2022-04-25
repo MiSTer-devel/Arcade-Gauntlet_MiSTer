@@ -91,6 +91,10 @@ begin
 	-- IMPORTANT: data out is the COMPLEMENT of data in!!!
 	p_4M_5M : process
 	variable RAM : RAM_ARRAY;
+	-- Ask Xilinx synthesis to use block RAMs if possible
+	attribute ram_style : string;
+	attribute ram_style of RAM : variable is "block";
+	-- Ask Quartus synthesis to use block RAMs if possible
 	attribute ramstyle : string;
 	attribute ramstyle of RAM : variable is "M10K";
 	begin
