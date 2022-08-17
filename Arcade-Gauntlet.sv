@@ -257,6 +257,11 @@ localparam CONF_STR = {
 	"O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
+	"h2OAB,Warrior,Joystick 1,Joystick 2,Joystick 3,Joystick 4;",
+	"h2OCD,Valkyrie,Joystick 2,Joystick 3,Joystick 4,Joystick 1;",
+	"h2OEF,Wizard,Joystick 3,Joystick 4,Joystick 1,Joystick 2;",
+	"h2OGH,Elf,Joystick 4,Joystick 1,Joystick 2,Joystick 3;",
+	"-;",
 	"DIP;",
 	"-;",
 	"O7,Service,Off,On;",
@@ -385,18 +390,61 @@ always @(posedge clk_sys) begin
 	endcase
 end
 
+wire [15:0] joy0_o, joy1_o, joy2_o, joy3_o;
+
+wire gauntlet_4p = (slap_type == 104 || slap_type == 106);
+
+wire [1:0] joy_warrior  = status[11:10];
+wire [1:0] joy_valkyrie = status[13:12];
+wire [1:0] joy_wizard   = status[15:14];
+wire [1:0] joy_elf      = status[17:16];
+
+always_comb begin
+	joy0_o = joy0;
+	joy1_o = joy1;
+	joy2_o = joy2;
+	joy3_o = joy3;
+
+	if (gauntlet_4p) begin
+		case (joy_warrior)
+			2'b00   : joy0_o = joy0;
+			2'b01   : joy0_o = joy1;
+			2'b10   : joy0_o = joy2;
+			2'b11   : joy0_o = joy3;
+		endcase
+		case (joy_valkyrie)
+			2'b00   : joy1_o = joy1;
+			2'b01   : joy1_o = joy2;
+			2'b10   : joy1_o = joy3;
+			2'b11   : joy1_o = joy0;
+		endcase
+		case (joy_wizard)
+			2'b00   : joy2_o = joy2;
+			2'b01   : joy2_o = joy3;
+			2'b10   : joy2_o = joy0;
+			2'b11   : joy2_o = joy1;
+		endcase
+		case (joy_elf)
+			2'b00   : joy3_o = joy3;
+			2'b01   : joy3_o = joy0;
+			2'b10   : joy3_o = joy1;
+			2'b11   : joy3_o = joy2;
+		endcase
+	end
+end
+
 wire [7:0] I_P1 = (slap_type == 118) ?
-				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joy0[7:4]})
-				: ~(p1 | {joy0[3:0], joy0[7:4]});
+				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joy0_o[7:4]})
+				: ~(p1 | {joy0_o[3:0], joy0_o[7:4]});
 wire [7:0] I_P2 = (slap_type == 118) ? 
-				  ~(p2 | {JoyZ_Bk,JoyY_Bk,JoyZ_Fw,JoyY_Fw,joy1[7:4]})
-				: ~(p2 | {joy1[3:0], joy1[7:4]});
+				  ~(p2 | {JoyZ_Bk,JoyY_Bk,JoyZ_Fw,JoyY_Fw,joy1_o[7:4]})
+				: ~(p2 | {joy1_o[3:0], joy1_o[7:4]});
 wire [7:0] I_P3 = (slap_type == 118) ?
-				  ~(p3 | { 6'b0,joy1[9],joy0[9]})
-				: ~(p3 | {joy2[3:0], joy2[7:4]});
+				  ~(p3 | { 6'b0,joy1_o[9],joy0_o[9]})
+				: ~(p3 | {joy2_o[3:0], joy2_o[7:4]});
 wire [7:0] I_P4 = (slap_type == 118) ?
 				  ~(p4)
-				: ~(p4 | {joy3[3:0], joy3[7:4]});
+				: ~(p4 | {joy3_o[3:0], joy3_o[7:4]});
 
 ///////////////////////////////////////////////////
 always @(posedge clk_vid) begin
@@ -434,7 +482,7 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 
 	.buttons(buttons),
 	.status(status),
-	.status_menumask({(slap_type == 118),direct_video}),
+	.status_menumask({gauntlet_4p,(slap_type == 118),direct_video}),
 	.direct_video(direct_video),
 
 	.ioctl_download(ioctl_download),
@@ -644,7 +692,7 @@ FPGA_GAUNTLET gauntlet
 	.I_P3(I_P3),
 	.I_P4(I_P4),
 	
-	.I_SYS({m_service, ~(m_coin1 | joy0[8]), ~(m_coin2 | joy1[8]), ~(m_coin3 | joy2[8]), ~(m_coin4 | joy3[8])}),
+	.I_SYS({m_service, ~(m_coin1 | joy0_o[8]), ~(m_coin2 | joy1_o[8]), ~(m_coin3 | joy2_o[8]), ~(m_coin4 | joy3_o[8])}),
 	.I_SLAP_TYPE(slap_type),
 
 	.O_LEDS(),
