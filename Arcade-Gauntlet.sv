@@ -53,13 +53,14 @@ module emu
 	output        VGA_F1,
 	output [1:0]  VGA_SL,
 	output        VGA_SCALER, // Force VGA scaler
+	output        VGA_DISABLE, // analog out is off
 
 	input  [11:0] HDMI_WIDTH,
 	input  [11:0] HDMI_HEIGHT,
 	output        HDMI_FREEZE,
 
 `ifdef MISTER_FB
-	// Use framebuffer in DDRAM (USE_FB=1 in qsf)
+	// Use framebuffer in DDRAM (MISTER_FB=1 in qsf)
 	// FB_FORMAT:
 	//    [2:0] : 011=8bpp(palette) 100=16bpp 101=24bpp 110=32bpp
 	//    [3]   : 0=16bits 565 1=16bits 1555
@@ -185,7 +186,8 @@ assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DD
 
 //assign VGA_SL = 0;
 assign VGA_F1 = 0;
-assign VGA_SCALER = 0;
+assign VGA_SCALER  = 0;
+assign VGA_DISABLE = 0;
 assign HDMI_FREEZE = 0;
 
 integer     slap_type = 104; // Slapstic type depends on game: 104=Gauntlet, 106=Gauntlet II, 107=2-Player Gauntlet, 118=Vindicators Part II
@@ -193,23 +195,23 @@ integer     slap_type = 104; // Slapstic type depends on game: 104=Gauntlet, 106
 wire        clk_7M;
 wire        clk_14M;
 wire        clk_sys;
-wire        clk_vid;
+wire        clk_video;
 reg         ce_pix;
 wire        pll_locked;
 wire        hblank, vblank;
 wire        hs, vs;
-reg  [ 7:0] sw[8];
+//reg  [ 7:0] sw[8];
 wire [ 3:0] r,g,b, gvid_I, gvid_R, gvid_G, gvid_B;
 wire [15:0] aud_l, aud_r;
-wire [31:0] status;
+wire [127:0] status;
 wire [ 1:0] buttons;
 wire        forced_scandoubler;
 wire        direct_video;
 wire        ioctl_download;
 wire        ioctl_wr;
 wire        ioctl_wait;
-wire [ 7:0] ioctl_index;
-wire [24:0] ioctl_addr;
+wire [15:0] ioctl_index;
+wire [26:0] ioctl_addr;
 wire [ 7:0] ioctl_dout;
 
 assign AUDIO_S = 1'b1; // signed samples
@@ -222,15 +224,14 @@ assign LED_DISK = 0;
 assign LED_POWER = 0;
 assign BUTTONS = 0;
 
-wire [15:0] joy0;
-wire [15:0] joy1;
-wire [15:0] joy2;
-wire [15:0] joy3;
+wire [31:0] joystick_0;
+wire [31:0] joystick_1;
+wire [31:0] joystick_2;
+wire [31:0] joystick_3;
 
 wire [10:0] ps2_key;
 
 wire [21:0] gamma_bus;
-wire reset = RESET | status[0] | buttons[1]| ioctl_download;
 
 reg [7:0]   p1 = 8'h0;
 reg [7:0]   p2 = 8'h0;
@@ -241,11 +242,13 @@ reg         m_coin1   = 1'b0;
 reg         m_coin2   = 1'b0;
 reg         m_coin3   = 1'b0;
 reg         m_coin4   = 1'b0;
-wire        m_service = ~status[7];
 
 assign {FB_PAL_CLK, FB_FORCE_BLANK, FB_PAL_ADDR, FB_PAL_DOUT, FB_PAL_WR} = '0;
 
-wire [1:0] ar = status[9:8];
+wire [1:0] ar = status[1:0];
+wire [2:0] fx = status[4:2];
+wire m_service = ~status[5];
+wire reset = RESET | status[6] | buttons[1]| ioctl_download;
 
 assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
 assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
@@ -254,13 +257,13 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 localparam CONF_STR = {
 	"A.GAUNTLET;;",
 	"-;",
-	"O89,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
+	"O01,Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
+	"O24,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
 	"-;",
 	"DIP;",
 	"-;",
-	"O7,Service,Off,On;",
-	"R0,Reset;",
+	"O5,Service,Off,On;",
+	"R6,Reset;",
 	"J1,Button1,Button2,Button3,Button4,Coin,VStart;",
 	"jn,A,B,X,Y,R,Start;",
 	"V,v",`BUILD_DATE
@@ -273,13 +276,13 @@ pll pll
 	.rst(1'b0),
 	.outclk_0(clk_7M),    //  7.15909 MHz
 	.outclk_1(clk_14M),   // 14.31818 MHz
-	.outclk_2(clk_vid),   // 57.27272 MHz
+	.outclk_2(clk_video), // 57.27272 MHz
 	.outclk_3(clk_sys),   // 93.06817 MHz
 	.outclk_4(SDRAM_CLK), // 93.06817 MHz
 	.locked(pll_locked)
 );
 
-always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
+//always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==254) && !ioctl_addr[24:3]) sw[ioctl_addr[2:0]] <= ioctl_dout;
 always @(posedge clk_sys) if (ioctl_wr && (ioctl_index==1)) slap_type <= ioctl_dout;
 
 wire pressed = ps2_key[9];
@@ -361,7 +364,7 @@ end
 reg JoyW_Fw,JoyW_Bk,JoyX_Fw,JoyX_Bk;
 reg JoyY_Fw,JoyY_Bk,JoyZ_Fw,JoyZ_Bk;
 always @(posedge clk_sys) begin 
-	case ({joy0[3],joy0[2],joy0[1],joy0[0]}) // Up,Down,Left,Right
+	case ({joystick_0[3],joystick_0[2],joystick_0[1],joystick_0[0]}) // Up,Down,Left,Right
 		4'b1010: begin JoyW_Fw=0; JoyW_Bk=0; JoyX_Fw=1; JoyX_Bk=0; end //Up_Left
 		4'b1000: begin JoyW_Fw=1; JoyW_Bk=0; JoyX_Fw=1; JoyX_Bk=0; end //Up
 		4'b1001: begin JoyW_Fw=1; JoyW_Bk=0; JoyX_Fw=0; JoyX_Bk=0; end //Up_Right
@@ -372,7 +375,7 @@ always @(posedge clk_sys) begin
 		4'b0010: begin JoyW_Fw=0; JoyW_Bk=1; JoyX_Fw=1; JoyX_Bk=0; end //Left
 		default: begin JoyW_Fw=0; JoyW_Bk=0; JoyX_Fw=0; JoyX_Bk=0; end
 	endcase
-	case ({joy1[3],joy1[2],joy1[1],joy1[0]}) // Up,Down,Left,Right
+	case ({joystick_1[3],joystick_1[2],joystick_1[1],joystick_1[0]}) // Up,Down,Left,Right
 		4'b1010: begin JoyY_Fw=0; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Up_Left
 		4'b1000: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=1; JoyZ_Bk=0; end //Up
 		4'b1001: begin JoyY_Fw=1; JoyY_Bk=0; JoyZ_Fw=0; JoyZ_Bk=0; end //Up_Right
@@ -386,41 +389,35 @@ always @(posedge clk_sys) begin
 end
 
 wire [7:0] I_P1 = (slap_type == 118) ?
-				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joy0[7:4]})
-				: ~(p1 | {joy0[3:0], joy0[7:4]});
+				  ~(p1 | {JoyX_Bk,JoyW_Bk,JoyX_Fw,JoyW_Fw,joystick_0[7:4]})
+				: ~(p1 | {joystick_0[3:0], joystick_0[7:4]});
 wire [7:0] I_P2 = (slap_type == 118) ? 
-				  ~(p2 | {JoyZ_Bk,JoyY_Bk,JoyZ_Fw,JoyY_Fw,joy1[7:4]})
-				: ~(p2 | {joy1[3:0], joy1[7:4]});
+				  ~(p2 | {JoyZ_Bk,JoyY_Bk,JoyZ_Fw,JoyY_Fw,joystick_1[7:4]})
+				: ~(p2 | {joystick_1[3:0], joystick_1[7:4]});
 wire [7:0] I_P3 = (slap_type == 118) ?
-				  ~(p3 | { 6'b0,joy1[9],joy0[9]})
-				: ~(p3 | {joy2[3:0], joy2[7:4]});
+				  ~(p3 | { 6'b0,joystick_1[9],joystick_0[9]})
+				: ~(p3 | {joystick_2[3:0], joystick_2[7:4]});
 wire [7:0] I_P4 = (slap_type == 118) ?
 				  ~(p4)
-				: ~(p4 | {joy3[3:0], joy3[7:4]});
+				: ~(p4 | {joystick_3[3:0], joystick_3[7:4]});
 
 ///////////////////////////////////////////////////
-always @(posedge clk_vid) begin
+always @(posedge clk_video) begin
 	reg [2:0] div;
 
 	div <= div + 1'd1;
 	ce_pix <= !div;
 end
 
-//screen_rotate screen_rotate (.*);
 arcade_video #(.WIDTH(320), .DW(12)) arcade_video
 (
 	.*,
-
-	.clk_video(clk_vid),
-	.ce_pix(ce_pix),
 
 	.RGB_in({r,g,b}),
 	.HBlank(~hblank),
 	.VBlank(~vblank),
 	.HSync(~hs),
 	.VSync(~vs),
-
-	.fx(status[5:3])
 );
 
 hps_io #(.CONF_STR(CONF_STR)) hps_io
@@ -444,134 +441,134 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 	.ioctl_index(ioctl_index),
 	.ioctl_wait(ioctl_wait),
 
-	.joystick_0(joy0),
-	.joystick_1(joy1),
-	.joystick_2(joy2),
-	.joystick_3(joy3),
+	.joystick_0(joystick_0),
+	.joystick_1(joystick_1),
+	.joystick_2(joystick_2),
+	.joystick_3(joystick_3),
 	.ps2_key(ps2_key)
 );
 
-	// convert input video from 16bit IRGB to 12 bit RGB
-	RGBI RCONV (.ADDR({gvid_I,gvid_R}), .DATA(r));
-	RGBI GCONV (.ADDR({gvid_I,gvid_G}), .DATA(g));
-	RGBI BCONV (.ADDR({gvid_I,gvid_B}), .DATA(b));
+// convert input video from 16bit IRGB to 12 bit RGB
+RGBI RCONV (.ADDR({gvid_I,gvid_R}), .DATA(r));
+RGBI GCONV (.ADDR({gvid_I,gvid_G}), .DATA(g));
+RGBI BCONV (.ADDR({gvid_I,gvid_B}), .DATA(b));
 
-	// ###################################################
-	// # This section loads the ROM files through HPS_IO #
-	// ###################################################
+// ###################################################
+// # This section loads the ROM files through HPS_IO #
+// ###################################################
 
-	wire gp_wr, mp_wr_9A_9B, mp_wr_10A_10B, mp_wr_7A_7B, mp_wr_6A_6B, mp_wr_5A_5B, mp_wr_3A_3B, ap_wr_16R, ap_wr_16S, cp_wr_6P;
+wire gp_wr, mp_wr_9A_9B, mp_wr_10A_10B, mp_wr_7A_7B, mp_wr_6A_6B, mp_wr_5A_5B, mp_wr_3A_3B, ap_wr_16R, ap_wr_16S, cp_wr_6P;
 
-	wire [15:0] ap_addr;
-	wire [ 7:0] ap_data, ap_data_16R, ap_data_16S;
+wire [15:0] ap_addr;
+wire [ 7:0] ap_data, ap_data_16R, ap_data_16S;
 
-	wire [17:0] gp_addr;
-	wire [31:0] gp_data;
+wire [17:0] gp_addr;
+wire [31:0] gp_data;
 
-	wire [18:0] mp_addr;
-	wire [15:0] mp_data, mp_data_9A_9B, mp_data_10A_10B, mp_data_7A_7B, mp_data_6A_6B, mp_data_5A_5B, mp_data_3A_3B;
+wire [18:0] mp_addr;
+wire [15:0] mp_data, mp_data_9A_9B, mp_data_10A_10B, mp_data_7A_7B, mp_data_6A_6B, mp_data_5A_5B, mp_data_3A_3B;
 
-	wire [13:0] cp_addr;
-	wire [ 7:0] cp_data;
+wire [13:0] cp_addr;
+wire [ 7:0] cp_data;
 
-	wire [ 7:0] r4_addr;
-	wire [ 3:0] r4_data, r4_data_G1, r4_data_G2, r4_data_V2;
+wire [ 7:0] r4_addr;
+wire [ 3:0] r4_data, r4_data_G1, r4_data_G2, r4_data_V2;
 
-	// ioctl_addr 000000..01FFFF = video ROMs 2L  2A  1L  1A  (4*32KB)
-	// ioctl_addr 020000..03FFFF = video ROMs 2MN 2B  1MN 1B  (4*32KB)
-	// ioctl_addr 040000..05FFFF = video ROMs 2P  2C  1P  1C  (4*32KB)
-	// ioctl_addr 060000..07FFFF = video ROMs 2R  2D  1R  1D  (4*32KB)
-	// ioctl_addr 080000..09FFFF = video ROMs 2ST 2EF 1ST 1EF (4*32KB)
-	// ioctl_addr 0A0000..0BFFFF = video ROMs 2U  2J  1U  1J  (4*32KB)
-	assign gp_wr         = (ioctl_wr && !ioctl_index && ioctl_addr[24:18] < 7'h03 && ioctl_addr[1:0]==2'b11) ? 1'b1 : 1'b0;
-	// ioctl_addr 0C0000..0CFFFF = CPU ROMS 9A 9B (2*32KB)
-	assign mp_wr_9A_9B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h0C && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 0D0000..0DFFFF = NO ROM (2*32KB filler)
-	// ioctl_addr 0E0000..0EFFFF = NO ROM (2*32KB filler)
-	// ioctl_addr 0F0000..0F7FFF = CPU ROMS 10A 10B (2*16KB)
-	assign mp_wr_10A_10B = (ioctl_wr && !ioctl_index && ioctl_addr[24:15]==10'h1E && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 0F8000..0FFFFF = NO ROMS (2*16K filler)
-	// ioctl_addr 100000..10FFFF = CPU ROMS 7A 7B (2*32KB)
-	assign mp_wr_7A_7B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h10 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 110000..11FFFF = CPU ROMS 6A 6B (2*32KB)
-	assign mp_wr_6A_6B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h11 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 120000..12FFFF = CPU ROMS 5A 5B (2*32KB)
-	assign mp_wr_5A_5B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h12 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 130000..13FFFF = CPU ROMS 3A 3B (2*32KB)
-	assign mp_wr_3A_3B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h13 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
-	// ioctl_addr 140000..147FFF = AUDIO ROM 16S (32KB)
-	assign ap_wr_16S     = (ioctl_wr && !ioctl_index && ioctl_addr[24:15]==10'h28 ) ? 1'b1 : 1'b0;
-	// ioctl_addr 148000..14BFFF = AUDIO ROM 16R (16KB)
-	assign ap_wr_16R     = (ioctl_wr && !ioctl_index && ioctl_addr[24:14]==11'h52 ) ? 1'b1 : 1'b0;
-	// ioctl_addr 14C000..14FFFF = CHAR ROM 6P (16KB)
-	assign cp_wr_6P      = (ioctl_wr && !ioctl_index && ioctl_addr[24:14]==11'h53 ) ? 1'b1 : 1'b0;
+// ioctl_addr 000000..01FFFF = video ROMs 2L  2A  1L  1A  (4*32KB)
+// ioctl_addr 020000..03FFFF = video ROMs 2MN 2B  1MN 1B  (4*32KB)
+// ioctl_addr 040000..05FFFF = video ROMs 2P  2C  1P  1C  (4*32KB)
+// ioctl_addr 060000..07FFFF = video ROMs 2R  2D  1R  1D  (4*32KB)
+// ioctl_addr 080000..09FFFF = video ROMs 2ST 2EF 1ST 1EF (4*32KB)
+// ioctl_addr 0A0000..0BFFFF = video ROMs 2U  2J  1U  1J  (4*32KB)
+assign gp_wr         = (ioctl_wr && !ioctl_index && ioctl_addr[24:18] < 7'h03 && ioctl_addr[1:0]==2'b11) ? 1'b1 : 1'b0;
+// ioctl_addr 0C0000..0CFFFF = CPU ROMS 9A 9B (2*32KB)
+assign mp_wr_9A_9B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h0C && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 0D0000..0DFFFF = NO ROM (2*32KB filler)
+// ioctl_addr 0E0000..0EFFFF = NO ROM (2*32KB filler)
+// ioctl_addr 0F0000..0F7FFF = CPU ROMS 10A 10B (2*16KB)
+assign mp_wr_10A_10B = (ioctl_wr && !ioctl_index && ioctl_addr[24:15]==10'h1E && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 0F8000..0FFFFF = NO ROMS (2*16K filler)
+// ioctl_addr 100000..10FFFF = CPU ROMS 7A 7B (2*32KB)
+assign mp_wr_7A_7B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h10 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 110000..11FFFF = CPU ROMS 6A 6B (2*32KB)
+assign mp_wr_6A_6B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h11 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 120000..12FFFF = CPU ROMS 5A 5B (2*32KB)
+assign mp_wr_5A_5B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h12 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 130000..13FFFF = CPU ROMS 3A 3B (2*32KB)
+assign mp_wr_3A_3B   = (ioctl_wr && !ioctl_index && ioctl_addr[24:16]== 9'h13 && ioctl_addr[0]==1'b1) ? 1'b1 : 1'b0;
+// ioctl_addr 140000..147FFF = AUDIO ROM 16S (32KB)
+assign ap_wr_16S     = (ioctl_wr && !ioctl_index && ioctl_addr[24:15]==10'h28 ) ? 1'b1 : 1'b0;
+// ioctl_addr 148000..14BFFF = AUDIO ROM 16R (16KB)
+assign ap_wr_16R     = (ioctl_wr && !ioctl_index && ioctl_addr[24:14]==11'h52 ) ? 1'b1 : 1'b0;
+// ioctl_addr 14C000..14FFFF = CHAR ROM 6P (16KB)
+assign cp_wr_6P      = (ioctl_wr && !ioctl_index && ioctl_addr[24:14]==11'h53 ) ? 1'b1 : 1'b0;
 
-	assign mp_data =
-		mp_addr[18:15] == 4'b0000  ? mp_data_9A_9B :
-		mp_addr[18:14] == 5'b00110 ? mp_data_10A_10B :
-		mp_addr[18:15] == 4'b0100  ? mp_data_7A_7B :
-		mp_addr[18:15] == 4'b0101  ? mp_data_6A_6B :
-		mp_addr[18:15] == 4'b0110  ? mp_data_5A_5B :
-		mp_addr[18:15] == 4'b0111  ? mp_data_3A_3B :
-		{ 16'h0 };
+assign mp_data =
+	mp_addr[18:15] == 4'b0000  ? mp_data_9A_9B :
+	mp_addr[18:14] == 5'b00110 ? mp_data_10A_10B :
+	mp_addr[18:15] == 4'b0100  ? mp_data_7A_7B :
+	mp_addr[18:15] == 4'b0101  ? mp_data_6A_6B :
+	mp_addr[18:15] == 4'b0110  ? mp_data_5A_5B :
+	mp_addr[18:15] == 4'b0111  ? mp_data_3A_3B :
+	{ 16'h0 };
 
-	assign ap_data = ap_addr[15] ? ap_data_16S : ap_data_16R;
+assign ap_data = ap_addr[15] ? ap_data_16S : ap_data_16R;
 
 /*************************************************************/
-	wire [22:0] sdram_addr;
-	reg  [31:0] sdram_data=0;
-	reg         sdram_we=0;
-	wire        sdram_ready;
-	wire        ap_en;
-	wire        gp_en;
-	wire        mp_en;
+wire [22:0] sdram_addr;
+reg  [31:0] sdram_data=0;
+reg         sdram_we=0;
+wire        sdram_ready;
+wire        ap_en;
+wire        gp_en;
+wire        mp_en;
 
-	// the order in which the files are listed in the .mra file determines the order in which they appear here on the HPS bus
-	// some files are interleaved as DWORD, some are interleaved as WORD and some are not interleaved and appear as BYTEs
-	// acc_bytes collects previous bytes so that when a WORD or DWORD is complete it is written to the RAM as appropriate
-	reg [23:0] acc_bytes = 0;
-	always @(posedge clk_sys)
-		if (ioctl_wr && (!ioctl_index) && ioctl_download )
-			acc_bytes<={acc_bytes[15:0],ioctl_dout}; // accumulate previous bytes
+// the order in which the files are listed in the .mra file determines the order in which they appear here on the HPS bus
+// some files are interleaved as DWORD, some are interleaved as WORD and some are not interleaved and appear as BYTEs
+// acc_bytes collects previous bytes so that when a WORD or DWORD is complete it is written to the RAM as appropriate
+reg [23:0] acc_bytes = 0;
+always @(posedge clk_sys)
+	if (ioctl_wr && (!ioctl_index) && ioctl_download )
+		acc_bytes<={acc_bytes[15:0],ioctl_dout}; // accumulate previous bytes
 
-	always @(posedge clk_sys)
+always @(posedge clk_sys)
+begin
+	sdram_we <= 1'b0;
+	if (ioctl_wr && (!ioctl_index) && ioctl_download && ioctl_addr[1] && ioctl_addr[0])
 	begin
-		sdram_we <= 1'b0;
-		if (ioctl_wr && (!ioctl_index) && ioctl_download && ioctl_addr[1] && ioctl_addr[0])
-		begin
-			sdram_data <= {acc_bytes,ioctl_dout};
-			sdram_we <= 1'b1;
-		end
+		sdram_data <= {acc_bytes,ioctl_dout};
+		sdram_we <= 1'b1;
 	end
+end
 
-	assign sdram_addr = ioctl_download?ioctl_addr[24:2]:{5'd0,gp_addr};
-	assign ioctl_wait = ~(pll_locked && sdram_ready);
+assign sdram_addr = ioctl_download?ioctl_addr[24:2]:{5'd0,gp_addr};
+assign ioctl_wait = ~(pll_locked && sdram_ready);
 
-	sdram #(.tCK_ns(1000/93.06817)) sdram
-	(
-		.I_RST(~pll_locked),
-		.I_CLK(clk_sys),
+sdram #(.tCK_ns(1000/93.06817)) sdram
+(
+	.I_RST(~pll_locked),
+	.I_CLK(clk_sys),
 
-		// controller interface
-		.I_ADDR(sdram_addr),
-		.I_DATA(sdram_data),
-		.I_WE(sdram_we),
-		.O_RDY(sdram_ready),
-		.O_DATA(gp_data),
+	// controller interface
+	.I_ADDR(sdram_addr),
+	.I_DATA(sdram_data),
+	.I_WE(sdram_we),
+	.O_RDY(sdram_ready),
+	.O_DATA(gp_data),
 
-		// SDRAM interface
-		.SDRAM_DQ(SDRAM_DQ),
-		.SDRAM_A(SDRAM_A),
-		.SDRAM_BA(SDRAM_BA),
-		.SDRAM_DQML(SDRAM_DQML),
-		.SDRAM_DQMH(SDRAM_DQMH),
-		.SDRAM_CLK(),
-		.SDRAM_CKE(SDRAM_CKE),
-		.SDRAM_nCS(SDRAM_nCS),
-		.SDRAM_nRAS(SDRAM_nRAS),
-		.SDRAM_nCAS(SDRAM_nCAS),
-		.SDRAM_nWE(SDRAM_nWE)
-	);
+	// SDRAM interface
+	.SDRAM_DQ(SDRAM_DQ),
+	.SDRAM_A(SDRAM_A),
+	.SDRAM_BA(SDRAM_BA),
+	.SDRAM_DQML(SDRAM_DQML),
+	.SDRAM_DQMH(SDRAM_DQMH),
+	.SDRAM_CLK(),
+	.SDRAM_CKE(SDRAM_CKE),
+	.SDRAM_nCS(SDRAM_nCS),
+	.SDRAM_nRAS(SDRAM_nRAS),
+	.SDRAM_nCAS(SDRAM_nCAS),
+	.SDRAM_nWE(SDRAM_nWE)
+);
 
 /*************************************************************/
 	// 256 M10K blocks
@@ -579,58 +576,57 @@ hps_io #(.CONF_STR(CONF_STR)) hps_io
 //	(.clock_a(clk_sys    ), .enable_a(), .wren_a(gp_wr        ), .address_a(ioctl_addr[17:2]), .data_a({acc_bytes[23:0],ioctl_dout}), .q_a(               ),
 //	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   gp_addr[15:0]), .data_b(                            ), .q_b(gp_data        ));
 
-	// 64 M10K blocks
-	dpram #(15,16) mp_ram_9A_9B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_9A_9B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_9A_9B   ));
+// 64 M10K blocks
+dpram #(15,16) mp_ram_9A_9B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_9A_9B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_9A_9B   ));
 
-	// 32 M10K blocks
-	dpram #(14,16) mp_ram_10A_10B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_10A_10B), .address_a(ioctl_addr[14:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[13:0]), .data_b(                            ), .q_b(mp_data_10A_10B));
+// 32 M10K blocks
+dpram #(14,16) mp_ram_10A_10B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_10A_10B), .address_a(ioctl_addr[14:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[13:0]), .data_b(                            ), .q_b(mp_data_10A_10B));
 
-	// 64 M10K blocks
-	dpram #(15,16) mp_ram_7A_7B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_7A_7B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_7A_7B  ));
+// 64 M10K blocks
+dpram #(15,16) mp_ram_7A_7B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_7A_7B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_7A_7B  ));
 
-	// 64 M10K blocks
-	dpram #(15,16) mp_ram_6A_6B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_6A_6B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_6A_6B  ));
+// 64 M10K blocks
+dpram #(15,16) mp_ram_6A_6B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_6A_6B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_6A_6B  ));
 
-	// 64 M10K blocks
-	dpram #(15,16) mp_ram_5A_5B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_5A_5B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_5A_5B  ));
+// 64 M10K blocks
+dpram #(15,16) mp_ram_5A_5B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_5A_5B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_5A_5B  ));
 
-	// 64 M10K blocks
-	dpram #(15,16) mp_ram_3A_3B
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_3A_3B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_3A_3B  ));
+// 64 M10K blocks
+dpram #(15,16) mp_ram_3A_3B
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(mp_wr_3A_3B  ), .address_a(ioctl_addr[15:1]), .data_a({acc_bytes[ 7:0],ioctl_dout}), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   mp_addr[14:0]), .data_b(                            ), .q_b(mp_data_3A_3B  ));
 
-	// 32 M10K blocks
-	dpram #(15, 8) ap_ram_16S
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(ap_wr_16S    ), .address_a(ioctl_addr[14:0]), .data_a(                 ioctl_dout ), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   ap_addr[14:0]), .data_b(                            ), .q_b(ap_data_16S    ));
+// 32 M10K blocks
+dpram #(15, 8) ap_ram_16S
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(ap_wr_16S    ), .address_a(ioctl_addr[14:0]), .data_a(                 ioctl_dout ), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   ap_addr[14:0]), .data_b(                            ), .q_b(ap_data_16S    ));
 
-	// 16 M10K blocks
-	dpram #(14, 8) ap_ram_16R
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(ap_wr_16R    ), .address_a(ioctl_addr[13:0]), .data_a(                 ioctl_dout ), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   ap_addr[13:0]), .data_b(                            ), .q_b(ap_data_16R    ));
+// 16 M10K blocks
+dpram #(14, 8) ap_ram_16R
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(ap_wr_16R    ), .address_a(ioctl_addr[13:0]), .data_a(                 ioctl_dout ), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   ap_addr[13:0]), .data_b(                            ), .q_b(ap_data_16R    ));
 
-	// 16 M10K blocks
-	dpram  #(14,8) cp_ram_6P
-	(.clock_a(clk_sys    ), .enable_a(), .wren_a(cp_wr_6P     ), .address_a(ioctl_addr[13:0]), .data_a(                 ioctl_dout ), .q_a(               ),
-	 .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   cp_addr[13:0]), .data_b(                            ), .q_b(cp_data        ));
+// 16 M10K blocks
+dpram  #(14,8) cp_ram_6P
+(.clock_a(clk_sys    ), .enable_a(), .wren_a(cp_wr_6P     ), .address_a(ioctl_addr[13:0]), .data_a(                 ioctl_dout ), .q_a(               ),
+ .clock_b(clk_sys    ), .enable_b(), .wren_b(             ), .address_b(   cp_addr[13:0]), .data_b(                            ), .q_b(cp_data        ));
 
-	// total game dpram uses 416 of 553 M10K blocks
+// total game dpram uses 416 of 553 M10K blocks
+PROM_4R_G1 PROM_4R_G1(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_G1) );
+PROM_4R_G2 PROM_4R_G2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_G2) );
+PROM_4R_V2 PROM_4R_V2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_V2) );
 
-	PROM_4R_G1 PROM_4R_G1(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_G1) );
-	PROM_4R_G2 PROM_4R_G2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_G2) );
-	PROM_4R_V2 PROM_4R_V2(.CLK(clk_sys), .ADDR(r4_addr), .DATA(r4_data_V2) );
-
-	assign r4_data = (slap_type == 118)?r4_data_V2:(slap_type == 106)?r4_data_G2:r4_data_G1;
+assign r4_data = (slap_type == 118)?r4_data_V2:(slap_type == 106)?r4_data_G2:r4_data_G1;
 
 FPGA_GAUNTLET gauntlet
 (
@@ -644,7 +640,7 @@ FPGA_GAUNTLET gauntlet
 	.I_P3(I_P3),
 	.I_P4(I_P4),
 	
-	.I_SYS({m_service, ~(m_coin1 | joy0[8]), ~(m_coin2 | joy1[8]), ~(m_coin3 | joy2[8]), ~(m_coin4 | joy3[8])}),
+	.I_SYS({m_service, ~(m_coin1 | joystick_0[8]), ~(m_coin2 | joystick_1[8]), ~(m_coin3 | joystick_2[8]), ~(m_coin4 | joystick_3[8])}),
 	.I_SLAP_TYPE(slap_type),
 
 	.O_LEDS(),
@@ -682,12 +678,12 @@ FPGA_GAUNTLET gauntlet
 );
 
 // pragma translate_off
-	bmp_out #( "BI" ) bmp_out
-	(
-		.clk_i(clk_7M),
-		.dat_i({r,4'b0,g,4'b0,b,4'b0}),
-		.hs_i(hs),
-		.vs_i(vs)
-	);
+bmp_out #( "BI" ) bmp_out
+(
+	.clk_i(clk_7M),
+	.dat_i({r,4'b0,g,4'b0,b,4'b0}),
+	.hs_i(hs),
+	.vs_i(vs)
+);
 // pragma translate_on
 endmodule
