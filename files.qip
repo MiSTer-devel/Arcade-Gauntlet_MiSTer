@@ -28,6 +28,7 @@ set_global_assignment -name VHDL_FILE rtl/lib/T65/T65.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_ALU.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_MCode.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/T65/T65_Pack.vhd
+set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K_ALU.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68K_Pack.vhd
 set_global_assignment -name VHDL_FILE rtl/lib/TG68K/TG68KdotC_Kernel.vhd
@@ -57,7 +58,6 @@ set_global_assignment -name VHDL_FILE rtl/gauntlet/RGBI.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/SLAGS.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/SLAPSTIC.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/SYNGEN.vhd
-set_global_assignment -name VHDL_FILE rtl/gauntlet/TG68K.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/TMS5220.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/VIDEO.vhd
 set_global_assignment -name VHDL_FILE rtl/gauntlet/VRAMS.vhd
